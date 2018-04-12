@@ -165,8 +165,7 @@ public class FilteringObservables {
   final TestScheduler testScheduler = new TestScheduler();
   Observable<Integer> timedObservable = Observable
       .just(1, 2, 3, 4, 5, 6)
-      .zipWith(Observable.interval(
-          0, 1, SECONDS, testScheduler), (item, time) -> item);
+      .zipWith(Observable.interval(0, 1, SECONDS, testScheduler), (item, time) -> item);
   Observable<Integer> delayedObservable = Observable.just(1)
       .delay(3, SECONDS, testScheduler);
 
