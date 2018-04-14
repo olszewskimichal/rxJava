@@ -19,6 +19,24 @@ import org.junit.jupiter.api.Test;
  * Observable sources don’t support backpressure.
  * Because of that, we should use it for sources that we merely consume and can’t influence.
  */
+
+/**
+ * BackpressureStrategy.BUFFER: If upstream produces too many events, they are buffered in an unbounded queue. No events are lost, but your whole application most likely is. If you are lucky, OutOfMemoryError will save you. I got stuck on 5+ second long GC pauses.
+ *
+ * BackpressureStrategy.ERROR: If over-production of events is discovered, MissingBackpressureException will be thrown. It's a sane (and safe) strategy.
+ *
+ * BackpressureStrategy.LATEST: Similar to DROP, but remembers last dropped event. Just in case request for more data comes in but we just dropped everything - we at least have the last seen value.
+ *
+ * BackpressureStrategy.MISSING: No safety measures, deal with it. Most likely one of the downstream operators (like observeOn()) will throw MissingBackpressureException.
+ *
+ * BackpressureStrategy.DROP: drops events that were not requested.
+ *
+ *
+ * The Flowable class that implements the Reactive-Streams Pattern and offers factory methods, intermediate operators and the ability to consume reactive dataflows.
+ * Reactive-Streams operates with Publishers which Flowable extends. Many operators therefore accept general Publishers directly and allow direct interoperation with other Reactive-Streams implementations.
+ *
+ * The Flowable hosts the default buffer size of 128 elements for operators, accessible via bufferSize(), that can be overridden globally via the system parameter rx2.buffer-size. Most operators, however, have overloads that allow setting their internal buffer size explicitly.
+ */
 public class FlowableTesting {
 
   @Test
