@@ -1,5 +1,7 @@
 package pl.michal.olszewski.reactive.wjug.nurkiewicz;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.schedulers.Schedulers;
@@ -13,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 
 public class RxJavaTest {
@@ -34,44 +37,44 @@ public class RxJavaTest {
     obs.subscribe(this::print);
   }
 
-  WeatherClient weatherClient = new WeatherClient();
+  SimpleWeatherClient simpleWeatherClient = new SimpleWeatherClient();
 
   @Test
   void wjug3() throws InterruptedException {
-    print(weatherClient.fetch("Warsaw"));
+    print(simpleWeatherClient.fetch("Warsaw"));
   }
 
   @Test
   void wjug4() throws InterruptedException {
-    final Observable<Weather> weatherObservable = weatherClient.rxFetch("Warsaw");
+    final Observable<SimpleWeather> weatherObservable = simpleWeatherClient.rxFetch("Warsaw");
     weatherObservable.subscribe(this::print);
   }
 
   @Test
   void wjug5() throws InterruptedException {
-    final Observable<Weather> weatherObservable = weatherClient.rxFetch("Warsaw");
+    final Observable<SimpleWeather> weatherObservable = simpleWeatherClient.rxFetch("Warsaw");
     weatherObservable.timeout(1, TimeUnit.SECONDS).subscribe(this::print);
   }
 
   @Test
   void wjug6() throws InterruptedException {
-    final Observable<Weather> weatherObservable = weatherClient.rxFetch("Warsaw");
-    weatherObservable.timeout(790, TimeUnit.MILLISECONDS).subscribe(this::print);
+    final Observable<SimpleWeather> weatherObservable = simpleWeatherClient.rxFetch("Warsaw");
+    weatherObservable.timeout(790, MILLISECONDS).subscribe(this::print);
   }
 
   @Test
   void wjug7() throws InterruptedException {
-    final Observable<Weather> warsaw = weatherClient.rxFetch("Warsaw");
-    final Observable<Weather> radom = weatherClient.rxFetch("Radom");
-    final Observable<Weather> weatherObservable = warsaw.mergeWith(radom);
+    final Observable<SimpleWeather> warsaw = simpleWeatherClient.rxFetch("Warsaw");
+    final Observable<SimpleWeather> radom = simpleWeatherClient.rxFetch("Radom");
+    final Observable<SimpleWeather> weatherObservable = warsaw.mergeWith(radom);
     //zwroci 2 obiekty
 
   }
 
   @Test
   void wjug8() throws InterruptedException {
-    final Observable<Weather> warsaw = weatherClient.rxFetch("Warsaw");
-    final Observable<Weather> radom = weatherClient.rxFetch("Radom");
+    final Observable<SimpleWeather> warsaw = simpleWeatherClient.rxFetch("Warsaw");
+    final Observable<SimpleWeather> radom = simpleWeatherClient.rxFetch("Radom");
 
     warsaw.subscribe(this::print);
     //900ms pozniej ... -> domyslnie rx nie jest asynchroniczny
@@ -82,13 +85,13 @@ public class RxJavaTest {
 
   @Test
   void wjug9() throws InterruptedException {
-    final Observable<Weather> warsaw = weatherClient.rxFetch("Warsaw")
+    final Observable<SimpleWeather> warsaw = simpleWeatherClient.rxFetch("Warsaw")
         .subscribeOn(Schedulers.io());  // pozwala to wykonac w innym wątku niz kliencki
     // nie uzywaj io() -
     final Observable<Person> personObservable = personDao.findByIdRx(42)
         .subscribeOn(Schedulers.io());
 
-    final Observable<String> stringObservable = warsaw.zipWith(personObservable, (Weather w, Person p) -> w + " : " + p);
+    final Observable<String> stringObservable = warsaw.zipWith(personObservable, (SimpleWeather w, Person p) -> w + " : " + p);
     stringObservable.subscribe(this::print);
     TimeUnit.SECONDS.sleep(2);
   }
@@ -180,14 +183,54 @@ public class RxJavaTest {
 
     observable.assertNoErrors();
     observable.assertNoValues();
-    s.advanceTimeBy(4999, TimeUnit.MILLISECONDS);
+    s.advanceTimeBy(4999, MILLISECONDS);
     observable.assertNoErrors();
     observable.assertNoValues();
-    s.advanceTimeBy(1, TimeUnit.MILLISECONDS);
+    s.advanceTimeBy(1, MILLISECONDS);
 
     observable.assertValue(BigDecimal.ONE.negate());
   }
 
+  @Test
+  void wjug20() {
+    final Observable<String> xlteam = Observable.just("shekhar", "sameer", "aditya", "ankur");
+    xlteam.subscribe(
+        name -> System.out.println("first .. I met " + name),
+        error -> System.out.println("error " + error),
+        () -> System.out.println("********first completed*******"));
+
+    xlteam.subscribe(
+        name -> System.out.println("second .. I met " + name),
+        error -> System.out.println("error " + error),
+        () -> System.out.println("********second completed*******"));
+
+    final Observable<String> xlteamWithS = xlteam
+        .map(String::toUpperCase)
+        .filter(name -> name.startsWith("S"));
+    xlteamWithS.subscribe(
+        name -> System.out.println("I met XL team member with name starting with S. He is " + name),
+        error -> System.out.println("error " + error),
+        () -> System.out.println("********third completed*******"));
+
+    xlteam.mergeWith(xlteamWithS)
+        .subscribe(
+            name -> System.out.println("I met all... " + name));
+  }
+
+  @Test
+  void wjug21() {
+    final Observable<Long> longObservable = Observable.<Long>create(subscriber -> {
+      LongStream longStream = LongStream.iterate(1, val -> val + 1);
+      longStream.forEach(val -> subscriber.onNext(val));
+    }).subscribeOn(Schedulers.newThread());
+
+    longObservable.take(10).subscribe(
+        naturalNumber -> System.out.println(String.format("first {%s} -- {%s}", naturalNumber, Thread.currentThread().getName())));
+    longObservable.skip(10).take(10).subscribe(naturalNumber -> System.out.println(String.format("second {%s} -- {%s}", naturalNumber, Thread.currentThread().getName())));
+    longObservable.skip(20).take(10).subscribe(naturalNumber -> System.out.println(String.format("third {%s} -- {%s}", naturalNumber, Thread.currentThread().getName())));
+
+  }
+  
   private Observable<BigDecimal> verySlowSoapService() {
     return Observable.timer(1, TimeUnit.MINUTES)
         .map(v -> BigDecimal.ZERO);

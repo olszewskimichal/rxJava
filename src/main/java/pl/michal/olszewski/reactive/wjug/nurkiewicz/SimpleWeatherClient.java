@@ -3,15 +3,15 @@ package pl.michal.olszewski.reactive.wjug.nurkiewicz;
 import io.reactivex.Observable;
 import java.time.Instant;
 
-public class WeatherClient {
+public class SimpleWeatherClient {
 
-  public Weather fetch(String city) throws InterruptedException {
+  public SimpleWeather fetch(final String city) throws InterruptedException {
     System.out.println(Instant.now() + " Loading for " + city);
     Thread.sleep(900);
-    return new Weather();
+    return new SimpleWeather();
   }
 
-  public Observable<Weather> rxFetch(String city) throws InterruptedException {
+  public Observable<SimpleWeather> rxFetch(final String city) throws InterruptedException {
     return Observable.fromCallable(() -> fetch(city));
   }
 }

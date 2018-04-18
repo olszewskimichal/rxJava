@@ -1,13 +1,13 @@
 package pl.michal.olszewski.reactive.wjug.nurkiewicz;
 
-public class Weather {
+public class SimpleWeather {
 
-  public Weather() {
+  public SimpleWeather() {
 
   }
 
   @Override
   public String toString() {
-    return "Weather - Sunny";
+    return "SimpleWeather - Sunny";
   }
 }
